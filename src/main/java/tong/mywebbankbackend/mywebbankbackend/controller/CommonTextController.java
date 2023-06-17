@@ -43,4 +43,7 @@ public class CommonTextController {
         pageVo.setTotalRecords((int) page.getTotal());
         return pageVo;
     }
+
+
+
 }

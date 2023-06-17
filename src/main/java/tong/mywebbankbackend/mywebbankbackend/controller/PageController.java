@@ -1,13 +1,16 @@
 package tong.mywebbankbackend.mywebbankbackend.controller;
 
 import jakarta.annotation.PostConstruct;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.rocketmq.spring.core.RocketMQTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
+import javax.annotation.Resource;
+import java.io.*;
+import java.nio.file.FileSystem;
 import java.util.stream.Collectors;
 
 /**
@@ -17,22 +20,22 @@ import java.util.stream.Collectors;
  */
 @RestController
 @RequestMapping("/page")
+@Slf4j
 public class PageController {
 
-    private String homePage;
+    @Resource
+    private RocketMQTemplate rocketMQTemplate;
+    private String BASE_PATH = "D:\\projects\\springboot-projects\\my-web-bank-backend\\test-resources";
 
     @PostConstruct
     public void begin() {
-        BufferedReader reader = new BufferedReader(new InputStreamReader(this.getClass().getClassLoader().getResourceAsStream("home.vue")));
-        homePage = reader.lines().collect(Collectors.joining("\n"));
+        log.info("====================rocketMQTemplate: {}", rocketMQTemplate);
     }
 
-    @GetMapping("/getPage")
-    public String getPage(@RequestParam("name") String name) {
-        if ("home".equals(name)) {
-            return homePage;
-        }
-        return null;
+    @GetMapping("/getOrganizationTalkNodes")
+    public String getOrganizationTalkNodes() throws FileNotFoundException {
+        BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(BASE_PATH + File.separator + "organizationTalkNodes.html")));
+        return reader.lines().collect(Collectors.joining("\n"));
     }
 
 }
