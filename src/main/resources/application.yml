@@ -6,12 +6,26 @@ spring:
     username: root
     password: root
 
+  kafka:
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    consumer:
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+#    bootstrap-servers: zookeeper3:9092
+
+  data:
+    redis:
+      client-type: jedis
+#      host: zookeeper3
+
 mybatis-plus:
   configuration:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
 
-rocketmq:
-  name-server: mysql3:9876
-
-  producer:
-    group: my-producer-group
+tong:
+  my-web-bank:
+    use-mq: false
+    use-redis: false

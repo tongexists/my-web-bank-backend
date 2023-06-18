@@ -2,15 +2,11 @@ package tong.mywebbankbackend.mywebbankbackend.controller;
 
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.rocketmq.spring.core.RocketMQTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.annotation.Resource;
 import java.io.*;
-import java.nio.file.FileSystem;
 import java.util.stream.Collectors;
 
 /**
@@ -23,13 +19,12 @@ import java.util.stream.Collectors;
 @Slf4j
 public class PageController {
 
-    @Resource
-    private RocketMQTemplate rocketMQTemplate;
+
     private String BASE_PATH = "D:\\projects\\springboot-projects\\my-web-bank-backend\\test-resources";
 
     @PostConstruct
     public void begin() {
-        log.info("====================rocketMQTemplate: {}", rocketMQTemplate);
+
     }
 
     @GetMapping("/getOrganizationTalkNodes")

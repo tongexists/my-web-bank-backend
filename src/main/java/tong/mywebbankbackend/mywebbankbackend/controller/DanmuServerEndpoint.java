@@ -5,23 +5,25 @@ import jakarta.websocket.*;
 import jakarta.websocket.server.PathParam;
 import jakarta.websocket.server.ServerEndpoint;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.rocketmq.client.producer.SendCallback;
-import org.apache.rocketmq.client.producer.SendResult;
-import org.apache.rocketmq.spring.core.RocketMQTemplate;
 import org.springframework.beans.BeansException;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Component;
+import tong.mywebbankbackend.mywebbankbackend.config.MyWebBankProperties;
+import tong.mywebbankbackend.mywebbankbackend.dto.SendDanmuToMq;
 import tong.mywebbankbackend.mywebbankbackend.entity.Danmu;
 import tong.mywebbankbackend.mywebbankbackend.service.IDanmuService;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
 
 
 /**
@@ -58,19 +60,19 @@ public class DanmuServerEndpoint implements ApplicationContextAware {
      * store DanmuServerEndpoints which connected with clients
      * sessionId -> DanmuServerEndpoint
      */
-    private static final ConcurrentHashMap<String, DanmuServerEndpoint> DANMU_SERVER_ENDPOINTS = new ConcurrentHashMap<>(16);
+    public static final ConcurrentHashMap<String, DanmuServerEndpoint> DANMU_SERVER_ENDPOINTS = new ConcurrentHashMap<>(16);
 
-    private boolean useMq = true;
+    private KafkaTemplate<String, String> kafkaTemplate;
 
-    private RocketMQTemplate rocketMQTemplate;
-
+    private MyWebBankProperties myWebBankProperties;
 
     @OnOpen
     public void openConnection(Session session, @PathParam("videoId") Long videoId) {
         log.info("open connection");
         this.session = session;
         this.sessionId = this.session.getId();
-        this.rocketMQTemplate = (RocketMQTemplate) APPLICATION_CONTEXT.getBean("rocketMQTemplate");
+        this.kafkaTemplate = (KafkaTemplate<String, String>) APPLICATION_CONTEXT.getBean("kafkaTemplate");
+        this.myWebBankProperties = APPLICATION_CONTEXT.getBean(MyWebBankProperties.class);
         // user watch video, increase watching number
         if (ONLINE_NUMBER.containsKey(videoId)) {
             AtomicLong counter = ONLINE_NUMBER.get(videoId);
@@ -107,26 +109,42 @@ public class DanmuServerEndpoint implements ApplicationContextAware {
         input.setId(null);
         input.setCreateTime(LocalDateTime.now());
 
+        String nJson = JSON.toJSONString(input);
         try {
-            if (useMq) {
-                this.rocketMQTemplate.asyncSend("danmu-store-into-db", input, new SendCallback() {
+            if (myWebBankProperties.isUseMq()) {
+                this.kafkaTemplate.send("store-danmu-into-db",nJson).whenComplete(new BiConsumer<SendResult<String, String>, Throwable>() {
                     @Override
-                    public void onSuccess(SendResult sendResult) {
-                        log.info(sendResult.toString());
-                    }
-
-                    @Override
-                    public void onException(Throwable throwable) {
-                        log.error(String.valueOf(throwable));
+                    public void accept(SendResult<String, String> stringStringSendResult, Throwable throwable) {
+                        log.info("send to topic[store-danmu-into-db] ok, result: {}", stringStringSendResult);
                     }
                 });
-                broadcast(json);
+                danmuService.saveToRedis(input);
+                sendDanmuToMq(nJson);
+
             } else {
                 danmuService.save(input);
-                broadcast(json);
+                danmuService.saveToRedis(input);
+                broadcast(nJson);
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    private void sendDanmuToMq(String nJson) {
+        // send danmu to mq
+        List<Map.Entry<String, DanmuServerEndpoint>> list = DANMU_SERVER_ENDPOINTS.entrySet().stream().collect(Collectors.toList());
+        for (int i = 0; i < list.size(); i+=10) {
+            List<Map.Entry<String, DanmuServerEndpoint>> subList = null;
+            if (i+10 > list.size()) {
+                subList = list.subList(i, list.size());
+            } else {
+                subList = list.subList(i, i + 10);
+            }
+            SendDanmuToMq sendDanmuToMq = new SendDanmuToMq();
+            sendDanmuToMq.setSessionIds(subList.stream().map(item -> item.getKey()).collect(Collectors.toList()));
+            sendDanmuToMq.setMessage(nJson);
+            this.kafkaTemplate.send("send-danmu-to-client", JSON.toJSONString(sendDanmuToMq));
         }
     }
 
@@ -137,7 +155,7 @@ public class DanmuServerEndpoint implements ApplicationContextAware {
         }
     }
 
-    private void sendMessage(String message) throws IOException {
+    public void sendMessage(String message) throws IOException {
         this.session.getBasicRemote().sendText(message);
     }
 
@@ -145,4 +163,6 @@ public class DanmuServerEndpoint implements ApplicationContextAware {
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
         APPLICATION_CONTEXT = applicationContext;
     }
+
+
 }

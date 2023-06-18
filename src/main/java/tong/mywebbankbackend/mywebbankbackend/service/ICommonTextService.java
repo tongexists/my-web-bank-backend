@@ -1,11 +1,7 @@
 package tong.mywebbankbackend.mywebbankbackend.service;
 
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import org.apache.ibatis.annotations.Param;
-import tong.mywebbankbackend.mywebbankbackend.entity.CommonText;
 import com.baomidou.mybatisplus.extension.service.IService;
-
-import java.util.List;
+import tong.mywebbankbackend.mywebbankbackend.entity.CommonText;
 
 /**
  * <p>
@@ -17,6 +13,5 @@ import java.util.List;
  */
 public interface ICommonTextService extends IService<CommonText> {
 
-    IPage<CommonText> listByBusinessTypePage(int businessType, int pageNum, int pageSize);
 
 }

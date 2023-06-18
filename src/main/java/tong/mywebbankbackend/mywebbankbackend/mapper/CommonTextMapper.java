@@ -1,11 +1,7 @@
 package tong.mywebbankbackend.mywebbankbackend.mapper;
 
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import org.apache.ibatis.annotations.Param;
-import tong.mywebbankbackend.mywebbankbackend.entity.CommonText;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-
-import java.util.List;
+import tong.mywebbankbackend.mywebbankbackend.entity.CommonText;
 
 /**
  * <p>
@@ -17,6 +13,5 @@ import java.util.List;
  */
 public interface CommonTextMapper extends BaseMapper<CommonText> {
 
-    IPage<CommonText> listByBusinessType(IPage<?> page, @Param("businessType") int businessType);
 
 }

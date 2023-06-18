@@ -1,7 +1,9 @@
 package tong.mywebbankbackend.mywebbankbackend.service;
 
-import tong.mywebbankbackend.mywebbankbackend.entity.Danmu;
 import com.baomidou.mybatisplus.extension.service.IService;
+import tong.mywebbankbackend.mywebbankbackend.entity.Danmu;
+
+import java.util.List;
 
 /**
  * <p>
@@ -12,5 +14,9 @@ import com.baomidou.mybatisplus.extension.service.IService;
  * @since 2023-06-17
  */
 public interface IDanmuService extends IService<Danmu> {
+
+    boolean saveToRedis(Danmu danmu);
+
+    List<Danmu> listByVideoIdFromRedis(Long videoId);
 
 }
